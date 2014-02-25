@@ -22,6 +22,12 @@ when 'suse'
   default[:pacemaker][:platform][:packages] += %w(
     pacemaker-mgmt-client xorg-x11-xauth
   )
+
+  # openstack-resource-agents package is required so that
+  # keystone-config-default-service is created
+  default[:pacemaker][:platform][:packages] += %w(
+    openstack-resource-agents
+  )
 else
   Chef::Application.fatal! "FIXME: #{node.platform} platform not supported yet"
   return
