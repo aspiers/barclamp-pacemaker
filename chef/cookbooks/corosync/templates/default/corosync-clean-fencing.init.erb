@@ -1,0 +1,40 @@
+#! /bin/sh
+#
+# /etc/init.d/corosync-clean-fencing
+#
+### BEGIN INIT INFO
+# Provides:          corosync-clean-fencing
+# Required-Start:    $local_fs
+# Should-Start:      $null
+# Required-Stop:     $null
+# Should-Stop:       $null
+# Default-Start:     0 6
+# Default-Stop:      $null
+# Description:       Clean file blocking corosync start after fencing
+### END INIT INFO
+
+. /etc/rc.status
+
+rc_reset
+
+case "$1" in
+  start)
+        rm -f <%= @block_corosync_file %>
+        rc_status -v
+        ;;
+  stop)
+        rc_status -v
+        ;;
+  status)
+        rc_status -v
+        ;;
+  reload)
+        rc_status -v
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|status|reload}"
+        exit 1
+        ;;
+esac
+
+rc_exit

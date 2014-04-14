@@ -79,7 +79,74 @@ rescue LoadError
   Gem.clear_paths
 end
 
+# If this file exists, then we will require that corosync is either manually
+# started or that the file gets removed to have chef-client start corosync.
+#
+# If the node goes down properly, then the corosync-clean-fencing service
+# that we install will remove the file, which will allow the chef-client to
+# start corosync on next boot.
+#
+# If the node goes down without the proper shutdown process (it has been
+# fenced, or it lost power, or it crashed, or...), then the file will exist
+# and corosync will not start on next boot, requiring manual intervention.
+block_corosync_file = "/var/cache/corosync/block_automatic_start"
+
+if node[:corosync][:check_for_start]
+  if ::File.exists?(block_corosync_file) && !system("crm status &> /dev/null")
+    raise "Not starting #{node[:corosync][:platform][:service_name]} automatically as it seems the node was not properly shut down. Please manually start the #{node[:corosync][:platform][:service_name]} service, or remove #{block_corosync_file}."
+  end
+
+  # this service will remove the blocking file on proper shutdown
+  template "/etc/init.d/corosync-clean-fencing" do
+    source "corosync-clean-fencing.init.erb"
+    owner "root"
+    group "root"
+    mode 0755
+    variables(:block_corosync_file => block_corosync_file)
+  end
+
+  service "corosync-clean-fencing" do
+    action :enable
+  end
+
+  # we make sure that corosync is not enabled to start on boot
+  enable_or_disable = :disable
+else
+  # we don't need corosync-clean-fencing anymore
+  service "corosync-clean-fencing" do
+    action :disable
+  end
+
+  file "/etc/init.d/corosync-clean-fencing" do
+    action :delete
+  end
+
+  file block_corosync_file do
+    action :delete
+  end
+
+  enable_or_disable = :enable
+end
+
 service node[:corosync][:platform][:service_name] do
   supports :restart => true, :status => :true
-  action [:enable, :start]
+  action [enable_or_disable, :start]
+end
+
+if node[:corosync][:check_for_start]
+  # we create the file that will block starting corosync on next reboot
+
+  directory ::File.dirname(block_corosync_file) do
+    owner "root"
+    group "root"
+    mode "0700"
+    action :create
+  end
+
+  file block_corosync_file do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+  end
 end
