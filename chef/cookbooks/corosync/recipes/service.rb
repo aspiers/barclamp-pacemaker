@@ -91,7 +91,7 @@ end
 # and corosync will not start on next boot, requiring manual intervention.
 block_corosync_file = "/var/cache/corosync/block_automatic_start"
 
-if node[:corosync][:check_for_start]
+if node[:corosync][:auto_start_when_clean]
   if ::File.exists?(block_corosync_file) && !system("crm status &> /dev/null")
     raise "Not starting #{node[:corosync][:platform][:service_name]} automatically as it seems the node was not properly shut down. Please manually start the #{node[:corosync][:platform][:service_name]} service, or remove #{block_corosync_file}."
   end
@@ -133,7 +133,7 @@ service node[:corosync][:platform][:service_name] do
   action [enable_or_disable, :start]
 end
 
-if node[:corosync][:check_for_start]
+if node[:corosync][:auto_start_when_clean]
   # we create the file that will block starting corosync on next reboot
 
   directory ::File.dirname(block_corosync_file) do
