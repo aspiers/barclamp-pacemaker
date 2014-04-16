@@ -89,7 +89,7 @@ end
 # If the node goes down without the proper shutdown process (it has been
 # fenced, or it lost power, or it crashed, or...), then the file will exist
 # and corosync will not start on next boot, requiring manual intervention.
-block_corosync_file = "/var/cache/corosync/block_automatic_start"
+block_corosync_file = "/var/spool/corosync/block_automatic_start"
 
 if node[:corosync][:auto_start_when_clean]
   if ::File.exists?(block_corosync_file) && !system("crm status &> /dev/null")
